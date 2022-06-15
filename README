@@ -1,0 +1,62 @@
+We want to compute the tile offsets for a mipmap
+Example: 576 x 576 texture
+Tile size is 64x64
+We'll compute offsets in tiles for simplicity
+Let's ignore tiles/sizes <64x64 for now
+
+L0: 576x576 -> 9*9 (81 tiles) @ offset 0
+    L1 offset is just L0 size as-is
+L1: 288x288 -> 5*5 (25 tiles) @ offset 81
+    L2 offset includes padding.
+    First take previous tile dimensions (9*9)
+    Divide by 2 (round down): 4*4
+    Extra tiles:
+        X was odd, so add rounded Y size = 4
+        Y was odd, so add rounded X size = 4
+        Total 8, divide by 2 = 4
+    L1 size is 5*5 + 4 = 29 tiles
+    L2 offset is 81 + 29 = 110
+    ^- This algorithm always works for L1 size
+L2: 144x144 -> 3*3 (size=9) at offset 110
+    First take previous tile dimensions (5*5)
+    Divide by 2 (round down): 2*2
+    Extra tiles:
+        X was odd, so add rounded Y size = 2
+        Y was odd, so add rounded X size = 2
+        Total 4, divide by 2 = 2
+    L2 size is 3*3 + 2 = 11 tiles
+    L3 offset is 110 + 11 = 121 <-- wrong
+L3: 72x72 -> 2*2 (size=4) at offset 120 <-- We calculated 121
+
+Same calculation as printed by the script (newlines added):
+[L0] t=64  576x576  ->   9*9  =   81
+[L1]      @   81==81    (  0) [l1+0  ] A ( 288x288 : 5*5 / 5*5 +4 =  29
+[L2]      @  110==110   (  0) [l1+29 ] A ( 144x144 : 3*3 / 3*3 +2 =  11
+[L3]      @  121!=120   ( -1) [l1+39 ] A (  72x72  : 2*2 / 2*2 +1 =   5
+    
+Other test cases:
+[L0] t=64  704x704  ->  11*11 =  121
+[L1]      @  121==121   (  0) [l1+0  ] A ( 352x352 : 6*6 / 6*6 +5 =  41
+[L2]      @  162==162   (  0) [l1+41 ] A ( 176x176 : 3*3 / 3*3 +0 =   9
+[L3]      @  171!=174   (  3) [l1+53 ] A (  88x88  : 2*2 / 2*2 +1 =   5
+
+[L0] t=64  832x832  ->  13*13 =  169
+[L1]      @  169==169   (  0) [l1+0  ] A ( 416x416 : 7*7 / 7*7 +6 =  55
+[L2]      @  224==224   (  0) [l1+55 ] A ( 208x208 : 4*4 / 4*4 +3 =  19
+[L3]      @  243!=241   ( -2) [l1+72 ] A ( 104x104 : 2*2 / 2*2 +0 =   4 
+
+[L0] t=64  960x960  ->  15*15 =  225
+[L1]      @  225==225   (  0) [l1+0  ] A ( 480x480 : 8*8 / 8*8 +7 =  71
+[L2]      @  296==296   (  0) [l1+71 ] A ( 240x240 : 4*4 / 4*4 +0 =  16
+[L3]      @  312!=317   (  5) [l1+92 ] A ( 120x120 : 2*2 / 2*2 +0 =   4 
+
+It works when L1 did not add extra tiles:
+[L0] t=64  640x640  ->  10*10 =  100
+[L1]      @  100==100   (  0) [l1+0  ] A ( 320x320 : 5*5 / 5*5 +0 =  25
+[L2]      @  125==125   (  0) [l1+25 ] A ( 160x160 : 3*3 / 3*3 +2 =  11
+[L3]      @  136==136   (  0) [l1+36 ] A (  80x80  : 2*2 / 2*2 +1 =   5 
+
+Which suggests perhaps the correct calculation is a one-shot offset computation,
+rather than accumulative (that would make sense). See the "l1+N" numbers for a
+delta from L1.
+
