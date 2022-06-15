@@ -157,9 +157,6 @@ for wsize, w, h, levels, xoffsets in tests:
         
         s += f"\x1b[33m[L{i}]\x1b[m"
         
-        xtx = dceil(tx, 2)
-        xty = dceil(ty, 2)
-        
         # Compute LOD using the usual OpenGL round down formula
         lod_w = max(1, lod_w >> 1)
         lod_h = max(1, lod_h >> 1)
@@ -175,22 +172,30 @@ for wsize, w, h, levels, xoffsets in tests:
 
         if lt != t:
             s += f" \x1b[35mt={t:<2d}\x1b[m "
+            # If we dropped down a tile size, round the tile count for
+            # padding calculation purposes
             stx = 2*pot(stx)
             sty = 2*pot(sty)
         else:
             s += "      "
 
+        # Dimensions in tiles of current level
         tx = dceil(lod_w, t)
         ty = dceil(lod_h, t)
 
+        # Size in tiles of current level
+        size = tx * ty
+
+        # Size of one tile in bytes
         tsize = t * t * wsize
 
+        # Expected offset/size
         xoff = xoffsets[i]
         xsize = 1 if i == (len(xoffsets) - 1) or tx == ty == t == 1 else xoffsets[i+1] - xoff
 
-        size = tx * ty
-
         assert (xoff - off) % tsize == 0
+
+        # How far off we are in tiles
         want = (xoff - off) // tsize
 
         if want != 0:
@@ -201,7 +206,10 @@ for wsize, w, h, levels, xoffsets in tests:
         delta = (xoff - l1_off) // tsize
         s += f"{f}@{off//tsize:5d}{eq}{xoff//tsize:<5d} ({want:3d}) [l1+{delta:<3d}]\x1b[m"
 
+        # Now compute size of current level to figure out the next offset
+
         if t == 64:
+            # The funny padding calculation (only works once in a tree so far)
             s += " A "
             add = 0
             if stx & 1 and stx != 1:
@@ -216,11 +224,14 @@ for wsize, w, h, levels, xoffsets in tests:
             add >>= 1
             size = stx * sty + add
         else:
+            # If the tile size is <64, it's already POT aligned so no funny business
             s += " B "
             add = 0
-            
+
+        # Increment offset
         off += size * tsize
         
+        # Offsets are also rounded up to a cacheline
         off = aup(off, cacheline)
         
         s += f"({lod_w:4d}x{lod_h:<4d}:{tx:2d}*{ty:<2d}/{stx:2}*{sty:<2}+{add:<2}={size:4d} "
