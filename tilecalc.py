@@ -150,8 +150,10 @@ for wsize, w, h, levels, xoffsets in tests:
 
     stx = tx = l0_tx
     sty = ty = l0_ty
+    stc = l0_tc
     
     tsize = t * t * wsize
+    addx = addy = 0
 
     for i in range(1, len(xoffsets)):
         
@@ -209,20 +211,20 @@ for wsize, w, h, levels, xoffsets in tests:
         # Now compute size of current level to figure out the next offset
 
         if t == 64:
-            # The funny padding calculation (only works once in a tree so far)
+            # dougall's magic
             s += " A "
-            add = 0
-            if stx & 1 and stx != 1:
-                add += (sty >> 1)
-
-            if sty & 1 and sty != 1:
-                add += (stx >> 1)
-            
-            stx = dceil(stx, 2)
-            sty = dceil(sty, 2)
-
-            add >>= 1
-            size = stx * sty + add
+            stc //= 4
+            addx |= stx & 1
+            addy |= sty & 1
+            stx = dfloor(stx, 2)
+            sty = dfloor(sty, 2)
+            size = stc
+            if addx:
+                size += sty
+            if addy:
+                size += stx
+            if addx & addy:
+                size += 1
         else:
             # If the tile size is <64, it's already POT aligned so no funny business
             s += " B "
