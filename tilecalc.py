@@ -102,7 +102,7 @@ failed = 0
 
 # Works for 1-2 levels so far
 LEVELS = 3
-PRINT_ALL = True
+PRINT_ALL = False
 
 for wsize, w, h, levels, xoffsets in tests:
     # Only do RGBA textures for now
@@ -174,10 +174,6 @@ for wsize, w, h, levels, xoffsets in tests:
 
         if lt != t:
             s += f" \x1b[35mt={t:<2d}\x1b[m "
-            # If we dropped down a tile size, round the tile count for
-            # padding calculation purposes
-            stx = 2*pot(stx)
-            sty = 2*pot(sty)
         else:
             s += "      "
 
@@ -238,8 +234,8 @@ for wsize, w, h, levels, xoffsets in tests:
         
         s += f"({lod_w:4d}x{lod_h:<4d}:{tx:2d}*{ty:<2d}/{stx:2}*{sty:<2}+{add:<2}={size:4d} "
 
-        if i >= LEVELS:
-            break
+        #if i >= LEVELS:
+            #break
 
         if t == tx == ty == 1:
             break
