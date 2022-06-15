@@ -56,10 +56,6 @@ LEVELS = 100
 PRINT_ALL = True
 
 for wsize, w, h, levels, xoffsets in tests:
-    # Only do RGBA textures for now
-    if wsize != 4:
-        continue
-
     total += 1
     fail_levs = 0
 
