@@ -75,8 +75,8 @@ for wsize, w, h, levels, xoffsets in tests:
 
         # Round up to POT if tile size is <64
         if t < 64:
-            lod_w = pot(aup(lod_w, t))
-            lod_h = pot(aup(lod_h, t))
+            lod_w = pot(lod_w)
+            lod_h = pot(lod_h)
 
         if lt != t:
             s += f" \x1b[35mt={t:<2d}\x1b[m "
